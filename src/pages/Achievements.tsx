@@ -1,13 +1,35 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { getCurrentUser, getUserDonations } from '@/lib/storage';
 import { calculateNextDonationDate } from '@/lib/types';
 import { format } from 'date-fns';
+import { Donation } from '@/lib/types';
 
 const Achievements = () => {
   const user = getCurrentUser();
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchDonations = async () => {
+      if (user && user._id) {
+        try {
+          const userDonations = await getUserDonations(user._id);
+          setDonations(userDonations);
+        } catch (error) {
+          console.error("Error fetching donations:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    fetchDonations();
+  }, [user]);
   
   if (!user) {
     return (
@@ -17,12 +39,19 @@ const Achievements = () => {
     );
   }
   
-  const donations = getUserDonations(user.id);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blood/5">
+        <div className="w-10 h-10 border-4 border-blood border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
   const lastDonation = user.lastDonation ? new Date(user.lastDonation) : null;
   const nextDonationDays = user.lastDonation ? calculateNextDonationDate(user.lastDonation) : 0;
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blood/5 to-blood/20 pt-20 pb-24 px-4 md:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-blood/5 to-blood/20 pt-16 pb-24 px-4 md:px-8 md:ml-64">
       <div className="w-full max-w-2xl mx-auto">
         <div className="mb-6 flex items-center gap-2">
           <Link to="/" className="p-2 bg-white/80 rounded-full shadow-sm">
@@ -48,7 +77,7 @@ const Achievements = () => {
             <p className="mt-4 text-white/80">
               {nextDonationDays > 0 
                 ? `You can donate again in ${nextDonationDays} days` 
-                : 'You are eligible to donate blood now'}
+                : "You are eligible to donate blood now"}
             </p>
           </div>
           
@@ -63,7 +92,7 @@ const Achievements = () => {
               
               <p className="mt-4 text-gray-600">
                 {user.totalDonations === 0 
-                  ? 'Make your first donation today!' 
+                  ? "Make your first donation today!" 
                   : user.totalDonations === 1 
                     ? "You've saved a life!" 
                     : `You've saved ${user.totalDonations} lives!`}

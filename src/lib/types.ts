@@ -1,6 +1,7 @@
 
 export interface User {
-  id: string;
+  _id?: string;
+  id?: string; // Keep for compatibility
   name: string;
   bloodGroup: string;
   location: string;
@@ -15,7 +16,8 @@ export interface User {
 }
 
 export interface BloodRequest {
-  id: string;
+  _id?: string;
+  id?: string; // Keep for compatibility
   bloodGroup: string;
   postedBy: string;
   contactNumber: string;
@@ -27,7 +29,8 @@ export interface BloodRequest {
 }
 
 export interface Donation {
-  id: string;
+  _id?: string;
+  id?: string; // Keep for compatibility
   donorId: string;
   requestId: string;
   donationDate: string;

@@ -1,14 +1,131 @@
-
 import { User, BloodRequest, Donation, BLOOD_GROUPS } from './types';
 import { toast } from 'sonner';
+import axios from 'axios';
 
-// Local storage keys
-const USERS_KEY = 'bloodconnect_users';
-const CURRENT_USER_KEY = 'bloodconnect_current_user';
-const REQUESTS_KEY = 'bloodconnect_requests';
-const DONATIONS_KEY = 'bloodconnect_donations';
+// API URL
+const API_URL = 'http://localhost:5000/api';
 
-// Initial mock data for blood requests
+// User management
+export const getUsers = async (): Promise<User[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/users`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return [];
+  }
+};
+
+export const getCurrentUser = (): User | null => {
+  const userId = localStorage.getItem('CURRENT_USER_KEY');
+  if (!userId) return null;
+  
+  // We still store the current user in localStorage for simplicity
+  // but the actual data comes from MongoDB
+  const userJson = localStorage.getItem(`USER_${userId}`);
+  return userJson ? JSON.parse(userJson) : null;
+};
+
+export const createUser = async (userData: Omit<User, 'id' | 'isActive' | 'totalDonations'>): Promise<User> => {
+  try {
+    const response = await axios.post(`${API_URL}/users`, userData);
+    const newUser = response.data;
+    
+    // Save to localStorage for current session
+    localStorage.setItem('CURRENT_USER_KEY', newUser._id);
+    localStorage.setItem(`USER_${newUser._id}`, JSON.stringify(newUser));
+    
+    return newUser;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
+};
+
+export const updateUser = async (userId: string, userData: Partial<User>): Promise<User | null> => {
+  try {
+    const response = await axios.put(`${API_URL}/users/${userId}`, userData);
+    const updatedUser = response.data;
+    
+    // Update in localStorage
+    localStorage.setItem(`USER_${userId}`, JSON.stringify(updatedUser));
+    
+    return updatedUser;
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return null;
+  }
+};
+
+export const logout = () => {
+  localStorage.removeItem('CURRENT_USER_KEY');
+  toast.success('Logged out successfully');
+};
+
+// Blood request management
+export const getBloodRequests = async (): Promise<BloodRequest[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/bloodRequests`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching blood requests:", error);
+    return [];
+  }
+};
+
+export const createBloodRequest = async (requestData: Omit<BloodRequest, 'id' | 'status' | 'postedAt'>): Promise<BloodRequest> => {
+  try {
+    const response = await axios.post(`${API_URL}/bloodRequests`, requestData);
+    toast.success('Blood request created successfully');
+    return response.data;
+  } catch (error) {
+    console.error("Error creating blood request:", error);
+    throw error;
+  }
+};
+
+export const updateBloodRequest = async (requestId: string, requestData: Partial<BloodRequest>): Promise<BloodRequest | null> => {
+  try {
+    const response = await axios.put(`${API_URL}/bloodRequests/${requestId}`, requestData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating blood request:", error);
+    return null;
+  }
+};
+
+// Donation management
+export const getDonations = async (): Promise<Donation[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/donations`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching donations:", error);
+    return [];
+  }
+};
+
+export const createDonation = async (donorId: string, requestId: string): Promise<Donation> => {
+  try {
+    const response = await axios.post(`${API_URL}/donations`, { donorId, requestId });
+    return response.data;
+  } catch (error) {
+    console.error("Error creating donation:", error);
+    throw error;
+  }
+};
+
+export const getUserDonations = async (userId: string): Promise<Donation[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/donations/user/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user donations:", error);
+    return [];
+  }
+};
+
+// Initial mock data for blood requests (kept for reference)
 const initialRequests: BloodRequest[] = [
   {
     id: '1',
@@ -40,163 +157,3 @@ const initialRequests: BloodRequest[] = [
     message: 'Urgently needed for accident victim',
   },
 ];
-
-// Initialize local storage with mock data if empty
-const initializeStorage = () => {
-  if (!localStorage.getItem(USERS_KEY)) {
-    localStorage.setItem(USERS_KEY, JSON.stringify([]));
-  }
-  
-  if (!localStorage.getItem(REQUESTS_KEY)) {
-    localStorage.setItem(REQUESTS_KEY, JSON.stringify(initialRequests));
-  }
-  
-  if (!localStorage.getItem(DONATIONS_KEY)) {
-    localStorage.setItem(DONATIONS_KEY, JSON.stringify([]));
-  }
-};
-
-// User management
-export const getUsers = (): User[] => {
-  initializeStorage();
-  return JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-};
-
-export const getCurrentUser = (): User | null => {
-  const userId = localStorage.getItem(CURRENT_USER_KEY);
-  if (!userId) return null;
-  
-  const users = getUsers();
-  return users.find(user => user.id === userId) || null;
-};
-
-export const createUser = (userData: Omit<User, 'id' | 'isActive' | 'totalDonations'>): User => {
-  const users = getUsers();
-  
-  // Generate a unique ID
-  const id = Date.now().toString();
-  
-  const newUser: User = {
-    id,
-    ...userData,
-    isActive: true,
-    totalDonations: 0,
-  };
-  
-  localStorage.setItem(USERS_KEY, JSON.stringify([...users, newUser]));
-  localStorage.setItem(CURRENT_USER_KEY, id);
-  
-  return newUser;
-};
-
-export const updateUser = (userId: string, userData: Partial<User>): User | null => {
-  const users = getUsers();
-  const userIndex = users.findIndex(user => user.id === userId);
-  
-  if (userIndex === -1) return null;
-  
-  const updatedUser = {
-    ...users[userIndex],
-    ...userData,
-  };
-  
-  users[userIndex] = updatedUser;
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  
-  return updatedUser;
-};
-
-export const logout = () => {
-  localStorage.removeItem(CURRENT_USER_KEY);
-  toast.success('Logged out successfully');
-};
-
-// Blood request management
-export const getBloodRequests = (): BloodRequest[] => {
-  initializeStorage();
-  return JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-};
-
-export const createBloodRequest = (requestData: Omit<BloodRequest, 'id' | 'status' | 'postedAt'>): BloodRequest => {
-  const requests = getBloodRequests();
-  
-  const newRequest: BloodRequest = {
-    id: Date.now().toString(),
-    ...requestData,
-    status: 'open',
-    postedAt: new Date().toISOString(),
-  };
-  
-  localStorage.setItem(REQUESTS_KEY, JSON.stringify([...requests, newRequest]));
-  toast.success('Blood request created successfully');
-  
-  return newRequest;
-};
-
-export const updateBloodRequest = (requestId: string, requestData: Partial<BloodRequest>): BloodRequest | null => {
-  const requests = getBloodRequests();
-  const requestIndex = requests.findIndex(req => req.id === requestId);
-  
-  if (requestIndex === -1) return null;
-  
-  const updatedRequest = {
-    ...requests[requestIndex],
-    ...requestData,
-  };
-  
-  requests[requestIndex] = updatedRequest;
-  localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
-  
-  return updatedRequest;
-};
-
-// Donation management
-export const getDonations = (): Donation[] => {
-  initializeStorage();
-  return JSON.parse(localStorage.getItem(DONATIONS_KEY) || '[]');
-};
-
-export const createDonation = (donorId: string, requestId: string): Donation => {
-  const donations = getDonations();
-  const users = getUsers();
-  const requests = getBloodRequests();
-  
-  // Create donation record
-  const newDonation: Donation = {
-    id: Date.now().toString(),
-    donorId,
-    requestId,
-    donationDate: new Date().toISOString(),
-  };
-  
-  // Update user's donation count and last donation date
-  const userIndex = users.findIndex(user => user.id === donorId);
-  if (userIndex !== -1) {
-    users[userIndex] = {
-      ...users[userIndex],
-      lastDonation: newDonation.donationDate,
-      totalDonations: (users[userIndex].totalDonations || 0) + 1,
-    };
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }
-  
-  // Update request status
-  const requestIndex = requests.findIndex(req => req.id === requestId);
-  if (requestIndex !== -1) {
-    requests[requestIndex] = {
-      ...requests[requestIndex],
-      status: 'fulfilled',
-    };
-    localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
-  }
-  
-  // Save donation
-  localStorage.setItem(DONATIONS_KEY, JSON.stringify([...donations, newDonation]));
-  
-  return newDonation;
-};
-
-export const getUserDonations = (userId: string): Donation[] => {
-  const donations = getDonations();
-  return donations.filter(donation => donation.donorId === userId);
-};
