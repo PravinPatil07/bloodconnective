@@ -65,7 +65,7 @@ const Achievements = () => {
                 {user.totalDonations === 0 
                   ? 'Make your first donation today!' 
                   : user.totalDonations === 1 
-                    ? 'You've saved a life!' 
+                    ? "You've saved a life!" 
                     : `You've saved ${user.totalDonations} lives!`}
               </p>
             </div>
@@ -86,7 +86,7 @@ const Achievements = () => {
               <p className="mt-4 text-gray-600">
                 {lastDonation 
                   ? `It's been ${format(lastDonation, 'PP')} since your last donation` 
-                  : 'You haven't donated blood yet'}
+                  : "You haven't donated blood yet"}
               </p>
             </div>
           </div>
