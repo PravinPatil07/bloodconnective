@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import Achievements from "./pages/Achievements";
 import NotFound from "./pages/NotFound";
 import Sidebar from "./components/layout/Sidebar";
+import NavigationMenuBar from "./components/layout/NavigationMenuBar";
 import { getCurrentUser } from "./lib/storage";
 
 const queryClient = new QueryClient();
@@ -32,7 +33,12 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          {user && <Sidebar />}
+          {user && (
+            <>
+              <NavigationMenuBar />
+              <Sidebar />
+            </>
+          )}
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route 

@@ -22,7 +22,7 @@ const Achievements = () => {
   const nextDonationDays = user.lastDonation ? calculateNextDonationDate(user.lastDonation) : 0;
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blood/5 to-blood/20 pt-16 pb-24 px-4 md:px-8 md:ml-64">
+    <div className="min-h-screen bg-gradient-to-b from-blood/5 to-blood/20 pt-20 pb-24 px-4 md:px-8">
       <div className="w-full max-w-2xl mx-auto">
         <div className="mb-6 flex items-center gap-2">
           <Link to="/" className="p-2 bg-white/80 rounded-full shadow-sm">
